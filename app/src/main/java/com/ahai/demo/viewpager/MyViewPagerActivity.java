@@ -1,12 +1,13 @@
 package com.ahai.demo.viewpager;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import android.app.Activity;
 import android.os.Bundle;
-import android.support.v4.view.PagerAdapter;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.View;
@@ -15,67 +16,121 @@ import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.TranslateAnimation;
 import android.widget.Button;
-import android.widget.ImageView;
 
-public class MyViewPagerActivity extends Activity implements View.OnClickListener {
+public class MyViewPagerActivity extends FragmentActivity implements View.OnClickListener {
 
     private String TAG = "MyViewPagerActivity";
 
     private ViewPager viewPager;
-    private List<View> views;
     private Button button;
-    private MyViewPagerAdapter pagerAdapter;
+    private MyFragmentStatePagerAdapter pagerAdapter;
+    private List<MyEntity> entities;
+    private List<Fragment> fragments;
 
-    LinkedList<Integer> imgResIds = new LinkedList();
+    public void init() {
 
-    public void initData() {
-        imgResIds.add(R.drawable.image1);
-        imgResIds.add(R.drawable.image2);
-        imgResIds.add(R.drawable.image3);
-        imgResIds.add(R.drawable.image4);
-        imgResIds.add(R.drawable.image5);
-        imgResIds.add(R.drawable.image6);
-        imgResIds.add(R.drawable.image7);
-        imgResIds.add(R.drawable.image8);
-        imgResIds.add(R.drawable.image9);
-        imgResIds.add(R.drawable.image10);
+        entities = new LinkedList<>();
+        entities.add(new MyEntity(R.drawable.image1, "1"));
+        entities.add(new MyEntity(R.drawable.image2, "2"));
+        entities.add(new MyEntity(R.drawable.image3, "3"));
+        entities.add(new MyEntity(R.drawable.image4, "4"));
+        entities.add(new MyEntity(R.drawable.image5, "5"));
+        entities.add(new MyEntity(R.drawable.image6, "6"));
+        entities.add(new MyEntity(R.drawable.image7, "7"));
+        entities.add(new MyEntity(R.drawable.image8, "8"));
+        entities.add(new MyEntity(R.drawable.image9, "9"));
+        entities.add(new MyEntity(R.drawable.image10, "10"));
+
+        fragments = new LinkedList<>();
+        for(int i=0;i<entities.size();i++) {
+            fragments.add(MyFragment.newInstance(entities.get(i)));
+        }
+        pagerAdapter = new MyFragmentStatePagerAdapter(getSupportFragmentManager());
+
+        viewPager = (ViewPager) findViewById(R.id.view_pager);
+        viewPager.setAdapter(pagerAdapter);
+        viewPager.setCurrentItem(0);
+
+        button = (Button) findViewById(R.id.button);
+        button.setOnClickListener(this);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.my_viewpager_activity);
-        initData();
-        initViews();
-    }
-
-    private void initViews() {
-        viewPager = (ViewPager) findViewById(R.id.view_pager);
-        views = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            View view = getLayoutInflater().inflate(R.layout.viewpager_item, null);
-            ImageView imageView = (ImageView) view.findViewById(R.id.image_view);
-            imageView.setImageResource(imgResIds.get(i));
-            views.add(view);
-        }
-        pagerAdapter = new MyViewPagerAdapter(views);
-        viewPager.setAdapter(pagerAdapter);
-        viewPager.setCurrentItem(0);
-        button = (Button) findViewById(R.id.button);
-        button.setOnClickListener(this);
+        init();
     }
 
     @Override
     public void onClick(View v) {
         if (v.getId() == button.getId()) {
+            watchViewPager();
             startExitAnim();
         }
     }
 
+    private View[] mChildren = new View[3];
+    private View mCurChild = null;
+
+    private void watchViewPager() {
+        Log.d(TAG, "watchViewPager");
+
+        int curIndex = viewPager.getCurrentItem();
+        int childCount = viewPager.getChildCount();
+
+        Log.d(TAG, "curIndex:"+curIndex+", childCount:"+childCount);
+
+        mChildren = new View[3];
+
+        switch (childCount) {
+            case 0:
+                return;
+            case 1:
+                mChildren[0] = viewPager.getChildAt(0);
+            case 2:
+                mChildren[0] = viewPager.getChildAt(0);
+                mChildren[1] = viewPager.getChildAt(1);
+            case 3:
+                mChildren[0] = viewPager.getChildAt(0);
+                mChildren[1] = viewPager.getChildAt(1);
+                mChildren[2] = viewPager.getChildAt(2);
+        }
+
+        for(int i=0;i<mChildren.length;i++){
+            View view = mChildren[i];
+            if(view != null) {
+                int[] loc = new int[2];
+                view.getLocationOnScreen(loc);
+                Log.d(TAG, "children["+i+"] x:"+loc[0]+", width:"+view.getWidth());
+                if(loc[0] > 0 && loc[0] < view.getWidth()) {
+                    mCurChild = view;
+                    break;
+                }
+            }
+        }
+
+        Log.d(TAG, "mCurChild:"+getViewString(mCurChild));
+
+        for(int i = 0; i< mChildren.length; i++) {
+            Log.d(TAG, "mChildren["+i+"]:"+getViewString(mChildren[i]));
+        }
+    }
+
+    private String getViewString(View view) {
+        if(view == null) {
+            return "null";
+        }
+        return view.getClass().getSimpleName()+"@"+view.hashCode()+", left:"+view.getLeft();
+    }
+
     private void startExitAnim() {
-        View curChild = viewPager.getChildAt(viewPager.getCurrentItem());
-        int toYDelta = curChild.getHeight();
+        Log.d(TAG, "startExitAnim");
+
+        int toYDelta = mCurChild.getHeight();
+
         Log.d(TAG, "toYDelta:"+toYDelta);
+
         Animation anim = makeTranslateAnimation(0, 0, 0, toYDelta, true);
         anim.setAnimationListener(new Animation.AnimationListener() {
             @Override
@@ -85,7 +140,9 @@ public class MyViewPagerActivity extends Activity implements View.OnClickListene
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                startEnterAnim();
+                if(viewPager.getChildCount() > 1) {
+                    startEnterAnim();
+                }
             }
 
             @Override
@@ -93,34 +150,65 @@ public class MyViewPagerActivity extends Activity implements View.OnClickListene
 
             }
         });
-        curChild.startAnimation(anim);
+        mCurChild.startAnimation(anim);
     }
 
     private void startEnterAnim() {
-        int curIndex = viewPager.getCurrentItem();
-        Log.d(TAG, "curIndex:"+curIndex+", pageCount:"+viewPager.getChildCount());
 
-        View curChild = viewPager.getChildAt(curIndex);
-        View brother1 = viewPager.getChildAt(curIndex - 1);
-        View brother2 = viewPager.getChildAt(curIndex + 1);
+        Log.d(TAG, "startEnterAnim");
+
+        View viewEnter = null;
+
+        switch (viewPager.getChildCount()) {
+            case 2: {
+                if(mChildren[0].hashCode() == mCurChild.hashCode()) {
+                    viewEnter = mChildren[1];
+                } else {
+                    viewEnter = mChildren[0];
+                }
+                break;
+            }
+            case 3: {
+                if(mChildren[0].hashCode() == mCurChild.hashCode()) {
+                    viewEnter = mChildren[1].getLeft() > mChildren[2].getLeft() ? mChildren[1] : mChildren[2];
+                } else if(mChildren[1].hashCode() == mCurChild.hashCode()) {
+                    viewEnter = mChildren[0].getLeft() > mChildren[2].getLeft() ? mChildren[0] : mChildren[2];
+                } else {
+                    viewEnter = mChildren[1].getLeft() > mChildren[0].getLeft() ? mChildren[1] : mChildren[0];
+                }
+                break;
+            }
+        }
 
         int[] loc = new int[2];
-        curChild.getLocationOnScreen(loc);
+        mCurChild.getLocationOnScreen(loc);
         int xCur = loc[0];
 
-        brother1.getLocationOnScreen(loc);
-        int xBrother1 = loc[0];
+        viewEnter.getLocationOnScreen(loc);
+        int xViewEnter = loc[0];
 
-        brother2.getLocationOnScreen(loc);
-        int xBrother2 = loc[0];
+        int toXDelta = xCur - xViewEnter;
 
-        View brother = xBrother1 > xBrother2 ? brother1 : brother2;
+        Log.d(TAG, "xCur:"+xCur+", xViewEnter:"+xViewEnter+", toXDelta:"+toXDelta);
 
-        int toXDelta = xCur - (xBrother1 > xBrother2 ? xBrother1 : xBrother2);
+        Animation animEnter = makeTranslateAnimation(0, toXDelta, 0, 0, true);
+        animEnter.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
 
-        Log.d(TAG, "xCur:"+xCur+", xBrother1:"+xBrother1+", xBrother2:"+xBrother2+", toXDelta:"+toXDelta);
-        Animation anim = makeTranslateAnimation(0, toXDelta, 0, 0, true);
-        brother.startAnimation(anim);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        viewEnter.startAnimation(animEnter);
     }
 
     private Animation makeTranslateAnimation(float fromX, float toX, float fromY, float toY, boolean fillAfter) {
@@ -132,33 +220,20 @@ public class MyViewPagerActivity extends Activity implements View.OnClickListene
         return animation;
     }
 
-    public class MyViewPagerAdapter extends PagerAdapter {
-        private List<View> views;
+    class MyFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
 
-        public MyViewPagerAdapter(List<View> views) {
-            this.views = views;
+        public MyFragmentStatePagerAdapter(FragmentManager fm) {
+            super(fm);
         }
 
         @Override
-        public void destroyItem(ViewGroup container, int position, Object object) {
-            container.removeView(views.get(position));
-        }
-
-
-        @Override
-        public Object instantiateItem(ViewGroup container, int position) {
-            container.addView(views.get(position), 0);
-            return views.get(position);
+        public Fragment getItem(int position) {
+            return fragments.get(position);
         }
 
         @Override
         public int getCount() {
-            return views.size();
-        }
-
-        @Override
-        public boolean isViewFromObject(View view, Object object) {
-            return view == object;
+            return fragments.size();
         }
     }
 }
