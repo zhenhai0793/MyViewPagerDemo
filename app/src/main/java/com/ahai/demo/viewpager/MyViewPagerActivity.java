@@ -142,6 +142,8 @@ public class MyViewPagerActivity extends FragmentActivity implements View.OnClic
             public void onAnimationEnd(Animation animation) {
                 if(viewPager.getChildCount() > 1) {
                     startEnterAnim();
+                } else {
+                    pagerAdapter.removeItem(viewPager.getCurrentItem());
                 }
             }
 
@@ -191,7 +193,7 @@ public class MyViewPagerActivity extends FragmentActivity implements View.OnClic
 
         Log.d(TAG, "xCur:"+xCur+", xViewEnter:"+xViewEnter+", toXDelta:"+toXDelta);
 
-        Animation animEnter = makeTranslateAnimation(0, toXDelta, 0, 0, true);
+        Animation animEnter = makeTranslateAnimation(0, toXDelta, 0, 0, false);
         animEnter.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
@@ -200,7 +202,7 @@ public class MyViewPagerActivity extends FragmentActivity implements View.OnClic
 
             @Override
             public void onAnimationEnd(Animation animation) {
-
+                pagerAdapter.removeItem(viewPager.getCurrentItem());
             }
 
             @Override
@@ -234,6 +236,20 @@ public class MyViewPagerActivity extends FragmentActivity implements View.OnClic
         @Override
         public int getCount() {
             return fragments.size();
+        }
+
+        @Override
+        public int getItemPosition(Object object) {
+            // return super.getItemPosition(object);
+            return POSITION_NONE;
+        }
+
+        public void removeItem(int index) {
+            Log.d(TAG, "removeItem index:"+index + ", total:"+fragments.size());
+            if(index >= 0 && index < fragments.size()) {
+                fragments.remove(index);
+                notifyDataSetChanged();
+            }
         }
     }
 }
